@@ -98,3 +98,18 @@ def test_cboe_failure_falls_back_to_yahoo_vix_and_is_recorded(tmp_path, cfg, mon
     c = {**cfg, "data": {**cfg["data"], "price_source": "yahoo_chart_direct"}}
     meta = verify_snapshot(create_snapshot(c, tmp_path / "data", "D2"))
     assert meta["vix_source_used"].startswith("yahoo_^VIX_fallback")
+
+
+def test_french_csv_auto_extracted_by_os_is_accepted(tmp_path, cfg):
+    src = tmp_path / "dl"
+    src.mkdir()
+    for t in cfg["data"]["tickers"]:
+        (src / f"volvix_yahoo_chart_{t}.json").write_text(json.dumps(_chart(t)))
+    (src / "VIX_History.csv").write_text("DATE,OPEN,HIGH,LOW,CLOSE\n01/02/2024,13,13,13,13.2\n")
+    (src / "F-F_Research_Data_Factors_daily.csv").write_text("x\n,Mkt-RF,SMB,HML,RF\n20240102,0.1,0.1,0.1,0.021\n")
+    snap = create_snapshot_from_files(cfg, tmp_path / "data", src, snapshot_id="T3")
+    meta = verify_snapshot(snap)
+    from volvix.data.clean import parse_french_daily
+    rf = parse_french_daily(snap / "ff_factors_daily.zip")
+    assert abs(rf["rf"].iloc[0] - 0.00021) < 1e-12
+    assert meta["files"]["original/F-F_Research_Data_Factors_daily.csv"]["source"].startswith("http_via_browser_auto")

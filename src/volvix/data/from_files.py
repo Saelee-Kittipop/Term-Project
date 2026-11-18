@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -107,9 +108,20 @@ def create_snapshot_from_files(cfg: dict, data_dir: str | Path, files_dir: str |
     for name, url in (("VIX_History.csv", d["urls"]["cboe_vix"]), ("F-F_Research_Data_Factors_daily_CSV.zip", d["urls"]["french_daily_zip"]),
                       ("volvix_yahoo_chart_VIX.json", None)):
         src = files_dir / name
-        if not src.exists():
-            if name == "F-F_Research_Data_Factors_daily_CSV.zip":
+        if not src.exists() and name == "F-F_Research_Data_Factors_daily_CSV.zip":
+            csv = files_dir / "F-F_Research_Data_Factors_daily.csv"
+            if not csv.exists():
                 raise FileNotFoundError(src)
+            # macOS/Safari can auto-extract the downloaded zip; keep the extracted CSV as the original and
+            # re-wrap it (byte-identical member) so the cleaner reads the same format
+            shutil.copyfile(csv, snap / "original" / csv.name)
+            rec(f"original/{csv.name}", source="http_via_browser_auto_extracted_by_os", url=url,
+                note="server sent a zip; the OS extracted it on download, so the CSV member is the original kept")
+            with zipfile.ZipFile(snap / "ff_factors_daily.zip", "w", zipfile.ZIP_DEFLATED) as z:
+                z.write(snap / "original" / csv.name, csv.name)
+            rec("ff_factors_daily.zip", source="rezipped", derived_from=f"original/{csv.name}")
+            continue
+        if not src.exists():
             continue
         shutil.copyfile(src, snap / "original" / name)
         rec(f"original/{name}", source="yahoo_chart_api_v8" if name.endswith(".json") else "http", url=url,
@@ -138,8 +150,9 @@ def create_snapshot_from_files(cfg: dict, data_dir: str | Path, files_dir: str |
         meta["vix_source_used"] = "yahoo_^VIX_fallback (Cboe unavailable)"
     else:
         raise FileNotFoundError("no VIX source: neither VIX_History.csv nor volvix_yahoo_chart_VIX.json")
-    shutil.copyfile(snap / "original" / "F-F_Research_Data_Factors_daily_CSV.zip", snap / "ff_factors_daily.zip")
-    rec("ff_factors_daily.zip", source="copy", derived_from="original/F-F_Research_Data_Factors_daily_CSV.zip")
+    if (snap / "original" / "F-F_Research_Data_Factors_daily_CSV.zip").exists():
+        shutil.copyfile(snap / "original" / "F-F_Research_Data_Factors_daily_CSV.zip", snap / "ff_factors_daily.zip")
+        rec("ff_factors_daily.zip", source="copy", derived_from="original/F-F_Research_Data_Factors_daily_CSV.zip")
     write_json(snap / "snapshot_metadata.json", meta)
     for p in snap.rglob("*"):
         if p.is_file():
