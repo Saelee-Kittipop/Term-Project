@@ -1,0 +1,14 @@
+# Runtime dependencies (minimum versions). The exact versions of every run are written to
+# <run>/environment/pip_freeze.txt. torch is NOT reinstalled in Colab: the preinstalled CUDA build is used.
+numpy>=1.26
+pandas>=2.2
+scipy>=1.11
+scikit-learn>=1.4
+matplotlib>=3.8
+pyarrow>=14
+pyyaml>=6
+arch>=7.0
+yfinance>=0.2.50
+pandas_market_calendars>=4.4
+torch>=2.2
+pytest>=8

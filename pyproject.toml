@@ -1,0 +1,9 @@
+[project]
+name = "volvix"
+version = "1.0.0"
+description = "Portfolio volatility forecasting with LSTM/Transformer and the incremental value of VIX (term project)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

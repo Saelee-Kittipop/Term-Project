@@ -1,0 +1,10 @@
+# SMOKE overrides (merged on top of protocol.yaml).
+# Purpose: verify the code path on train/validation only. Smoke outputs are NEVER results.
+run_kind: smoke
+training:
+  max_epochs: 2
+  patience: 2
+  seeds: [11]
+  grid:
+    learning_rate: [0.001]
+    dropout: [0.1]

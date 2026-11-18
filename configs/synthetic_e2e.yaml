@@ -1,0 +1,7 @@
+# CODE-PATH CHECK ON SYNTHETIC DATA ONLY (use with --snapshot synthetic).
+# Exercises every stage including test/backtest so the code can be verified without market data.
+# Numbers produced with this override are NOT research results.
+run_kind: synthetic_e2e
+training:
+  max_epochs: 3
+  patience: 2
