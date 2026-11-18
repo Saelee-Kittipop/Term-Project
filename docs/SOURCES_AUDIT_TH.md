@@ -29,6 +29,6 @@
 
 | ข้อมูล | URL | หมายเหตุ |
 |---|---|---|
-| ราคา ETF | Yahoo Finance ผ่าน yfinance | ไม่ใช่ point-in-time archive; adjusted prices อาจถูกผู้ให้บริการปรับย้อนหลัง จึงเก็บ raw snapshot + hash |
-| VIX | https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv | ใช้ CLOSE, lag 1 วันทำการ |
+| ราคา ETF | Yahoo Finance chart API v8 ดึงตรง (`query1/query2.finance.yahoo.com/v8/finance/chart/<T>`) ไฟล์ JSON ต้นฉบับเก็บใน snapshot; yfinance เป็นทางเลือก | ไม่ใช่ point-in-time archive; adjusted prices อาจถูกผู้ให้บริการปรับย้อนหลัง จึงเก็บ raw snapshot + hash |
+| VIX | https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv | ใช้ CLOSE, lag 1 วันทำการ; เทียบกับ Yahoo `^VIX` ใน `snapshot_metadata.json` |
 | RF รายวัน | https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip | หน่วยเปอร์เซ็นต์ → หาร 100; ใช้เฉพาะคำนวณ Sharpe |

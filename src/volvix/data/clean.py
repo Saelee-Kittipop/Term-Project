@@ -224,6 +224,8 @@ def clean_snapshot(cfg: dict, snap: str | Path, out_dir: str | Path) -> dict:
     write_csv(out_dir / "corporate_actions_audit.csv", ca_df)
     summary = {
         "snapshot_id": meta["snapshot_id"], "calendar_source": calendar_source,
+        "provenance": meta.get("provenance", "yfinance"), "vix_source_used": meta.get("vix_source_used", "cboe"),
+        "vix_crosscheck_cboe_vs_yahoo": meta.get("vix_crosscheck_cboe_vs_yahoo"),
         "first_price_date_by_ticker": {t: str(first_dates[t].date()) for t in tickers},
         "common_start": str(common_start.date()), "last_common_date": str(last_common.date()),
         "sessions": int(len(panel)), "valid_return_days": n_valid,

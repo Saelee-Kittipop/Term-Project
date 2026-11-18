@@ -44,3 +44,57 @@ def test_snapshot_from_files_keeps_original_bytes_and_hashes(tmp_path, cfg):
     assert meta["files"]["etf_ACWI_adjusted.csv"]["derived_from"] == "original/volvix_yahoo_chart_ACWI.json"
     df = pd.read_csv(snap / "etf_SHY_adjusted.csv")
     assert list(df.columns[:5]) == ["date", "Open", "High", "Low", "Close"]
+
+
+def test_direct_download_with_mocked_http(tmp_path, cfg, monkeypatch):
+    """No network: a fake getter returns Yahoo/Cboe/French payloads; snapshot + VIX cross-check are built."""
+    import io
+    import zipfile
+    from volvix.data import yahoo_direct
+    from volvix.data.download import create_snapshot
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("F-F_Research_Data_Factors_daily.csv", "x\n,Mkt-RF,SMB,HML,RF\n20240102,0.1,0.1,0.1,0.021\n")
+
+    def getter(url):
+        if "finance.yahoo.com" in url:
+            sym = url.split("/chart/")[1].split("?")[0].replace("%5E", "^")
+            return json.dumps(_chart(sym)).encode()
+        if "cboe" in url:
+            return b"DATE,OPEN,HIGH,LOW,CLOSE\n01/02/2024,90,90,90,90.0\n01/03/2024,91,91,91,91.0\n"
+        return buf.getvalue()
+
+    monkeypatch.setattr(yahoo_direct, "http_get", getter)
+    monkeypatch.setattr(yahoo_direct.time, "sleep", lambda s: None)
+    c = {**cfg, "data": {**cfg["data"], "price_source": "yahoo_chart_direct"}}
+    snap = create_snapshot(c, tmp_path / "data", "D1")
+    meta = verify_snapshot(snap)
+    assert meta["vix_source_used"] == "cboe"
+    assert meta["vix_crosscheck_cboe_vs_yahoo"]["common_days"] == 2      # ^VIX fake close 90.9, 91.9 -> diff 0.9
+    assert (snap / "original" / "volvix_yahoo_chart_GLD.json").exists()
+    assert meta["files"]["original/volvix_yahoo_chart_XLK.json"]["source"] == "yahoo_chart_api_v8"
+
+
+def test_cboe_failure_falls_back_to_yahoo_vix_and_is_recorded(tmp_path, cfg, monkeypatch):
+    import io
+    import zipfile
+    from volvix.data import yahoo_direct
+    from volvix.data.download import create_snapshot
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("F-F_Research_Data_Factors_daily.csv", "20240102,0.1,0.1,0.1,0.021\n")
+
+    def getter(url):
+        if "finance.yahoo.com" in url:
+            return json.dumps(_chart(url.split("/chart/")[1].split("?")[0].replace("%5E", "^"))).encode()
+        if "cboe" in url:
+            raise OSError("blocked")
+        return buf.getvalue()
+
+    monkeypatch.setattr(yahoo_direct, "http_get", getter)
+    monkeypatch.setattr(yahoo_direct.time, "sleep", lambda s: None)
+    c = {**cfg, "data": {**cfg["data"], "price_source": "yahoo_chart_direct"}}
+    meta = verify_snapshot(create_snapshot(c, tmp_path / "data", "D2"))
+    assert meta["vix_source_used"].startswith("yahoo_^VIX_fallback")

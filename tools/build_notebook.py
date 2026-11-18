@@ -71,17 +71,42 @@ print(r.stdout[-3000:], r.stderr[-2000:])
 assert r.returncode == 0, "tests failed - stop here and send the log"
 """)
 md("""
-## 2. ดาวน์โหลดข้อมูลจริง (raw snapshot ไม่ถูกแก้ไขภายหลัง) และ smoke check บน train/validation
+## 2. ดาวน์โหลดข้อมูลจาก Yahoo โดยตรง (raw snapshot ที่ไม่ถูกแก้ไขภายหลัง)
+ราคาปิด ETF ทั้ง 5 ตัวดึงจาก **Yahoo chart API v8** โดยตรงผ่าน HTTPS (endpoint เดียวกับที่ yfinance ใช้) ได้ทั้ง close, adjclose,
+เงินปันผล และ split; VIX ดึงจาก Cboe และดึง Yahoo `^VIX` มาเทียบความตรงกัน (ใช้แทน Cboe เฉพาะเมื่อ Cboe ล่มและจะบันทึกไว้);
+RF ดึงจาก Kenneth French ไฟล์ต้นฉบับทุกไฟล์ถูกเก็บใน `data/raw/<snapshot>/original/` พร้อม SHA-256
+ถ้ามี snapshot อยู่แล้วใน Drive จะใช้ของเดิม (ตั้ง `FORCE_NEW_DOWNLOAD = True` เพื่อดาวน์โหลดใหม่)
+""")
+code("""
+import glob, re, json, pandas as pd
+from pathlib import Path
+FORCE_NEW_DOWNLOAD = False
+existing = sorted(p for p in glob.glob(f"{DRIVE_ROOT}/data/raw/*/snapshot_metadata.json") if "SYNTHETIC" not in p)
+if existing and not FORCE_NEW_DOWNLOAD:
+    SNAPSHOT_ID = Path(existing[-1]).parent.name
+    print("reusing snapshot", SNAPSHOT_ID)
+else:
+    r = subprocess.run([sys.executable, "scripts/download_data.py", "--root", DRIVE_ROOT], capture_output=True, text=True)
+    print(r.stdout[-4000:], r.stderr[-3000:])
+    open(f"{DRIVE_ROOT}/download.log", "a").write(r.stdout + r.stderr)
+    assert r.returncode == 0, "download failed - wait a few minutes (Yahoo rate limit) and rerun this cell"
+    SNAPSHOT_ID = re.search(r"SNAPSHOT_ID=(\\S+)", r.stdout).group(1)
+meta = json.load(open(f"{DRIVE_ROOT}/data/raw/{SNAPSHOT_ID}/snapshot_metadata.json"))
+print("provenance:", meta.get("provenance")); print("VIX source used:", meta.get("vix_source_used"))
+print("Cboe vs Yahoo ^VIX:", meta.get("vix_crosscheck_cboe_vs_yahoo"))
+""")
+md("""
+### Smoke check บน train/validation
 Smoke ใช้ 1 config, 1 seed, 2 epochs เพื่อตรวจว่าทุกขั้นรันได้ **ผล smoke ไม่ใช่ผลการทดลอง** และ smoke ไม่สามารถเปิด test ได้
 """)
 code("""
 !python scripts/run_pipeline.py --root {DRIVE_ROOT} --run-name {SMOKE_RUN} --override configs/smoke.yaml \\
-    --snapshot latest --stages data,baselines,train,freeze,figures,report 2>&1 | tee {DRIVE_ROOT}/smoke.log
+    --snapshot {SNAPSHOT_ID} --stages data,baselines,train,freeze,figures,report 2>&1 | tee {DRIVE_ROOT}/smoke.log
 """)
 code("""
-import json, pandas as pd
 from IPython.display import Markdown, display
 snap_id = json.load(open(f"{DRIVE_ROOT}/runs/{SMOKE_RUN}/run_manifest.json"))["data"]["snapshot_id"]
+assert snap_id == SNAPSHOT_ID
 print("snapshot used:", snap_id)
 display(pd.read_csv(f"{DRIVE_ROOT}/runs/{SMOKE_RUN}/dataset/split_manifest.csv"))
 display(pd.read_csv(f"{DRIVE_ROOT}/runs/{SMOKE_RUN}/dataset/alignment_checks.csv"))

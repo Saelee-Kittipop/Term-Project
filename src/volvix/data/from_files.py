@@ -39,8 +39,8 @@ def parse_yahoo_chart(raw: bytes | str) -> tuple[pd.DataFrame, pd.DataFrame, dic
     r = j["chart"]["result"][0]
     dates = _ny_dates(r["timestamp"])
     q = r["indicators"]["quote"][0]
-    adj = np.array(r["indicators"]["adjclose"][0]["adjclose"], dtype=float)
     close = np.array(q["close"], dtype=float)
+    adj = np.array(r["indicators"]["adjclose"][0]["adjclose"], dtype=float) if r["indicators"].get("adjclose") else close.copy()
     o, h, lo = (np.array(q[k], dtype=float) for k in ("open", "high", "low"))
     vol = np.array(q["volume"], dtype=float)
     div = pd.Series(0.0, index=dates)
@@ -104,13 +104,40 @@ def create_snapshot_from_files(cfg: dict, data_dir: str | Path, files_dir: str |
         un.to_csv(snap / f"etf_{t}_unadjusted.csv")
         rec(f"etf_{t}_adjusted.csv", source="derived", derived_from=f"original/{name}", yahoo_meta=m)
         rec(f"etf_{t}_unadjusted.csv", source="derived", derived_from=f"original/{name}")
-    for name, url in (("VIX_History.csv", d["urls"]["cboe_vix"]), ("F-F_Research_Data_Factors_daily_CSV.zip", d["urls"]["french_daily_zip"])):
+    for name, url in (("VIX_History.csv", d["urls"]["cboe_vix"]), ("F-F_Research_Data_Factors_daily_CSV.zip", d["urls"]["french_daily_zip"]),
+                      ("volvix_yahoo_chart_VIX.json", None)):
         src = files_dir / name
+        if not src.exists():
+            if name == "F-F_Research_Data_Factors_daily_CSV.zip":
+                raise FileNotFoundError(src)
+            continue
         shutil.copyfile(src, snap / "original" / name)
-        rec(f"original/{name}", source="http_via_browser", url=url,
+        rec(f"original/{name}", source="yahoo_chart_api_v8" if name.endswith(".json") else "http", url=url,
             file_mtime_utc=pd.Timestamp(os.path.getmtime(src), unit="s", tz="UTC").isoformat())
-    shutil.copyfile(snap / "original" / "VIX_History.csv", snap / "vix_cboe.csv")
-    rec("vix_cboe.csv", source="copy", derived_from="original/VIX_History.csv")
+    yv = None
+    if (snap / "original" / "volvix_yahoo_chart_VIX.json").exists():
+        yv, _, _ = parse_yahoo_chart((snap / "original" / "volvix_yahoo_chart_VIX.json").read_bytes())
+    if (snap / "original" / "VIX_History.csv").exists():
+        shutil.copyfile(snap / "original" / "VIX_History.csv", snap / "vix_cboe.csv")
+        rec("vix_cboe.csv", source="copy", derived_from="original/VIX_History.csv")
+        meta["vix_source_used"] = "cboe"
+        if yv is not None:                         # cross-check Cboe close against Yahoo ^VIX close
+            cb = pd.read_csv(snap / "vix_cboe.csv")
+            cb.columns = [c.strip().upper() for c in cb.columns]
+            cb = pd.Series(cb["CLOSE"].to_numpy(float), index=pd.to_datetime(cb["DATE"], format="%m/%d/%Y"))
+            cb = cb[~cb.index.duplicated()]
+            j = pd.concat([cb.rename("cboe"), yv["Close"].rename("yahoo")], axis=1, join="inner").dropna()
+            diff = (j["cboe"] - j["yahoo"]).abs()
+            meta["vix_crosscheck_cboe_vs_yahoo"] = {"common_days": int(len(j)), "max_abs_diff": float(diff.max()) if len(j) else None,
+                                                    "days_abs_diff_gt_0.05": int((diff > 0.05).sum())}
+    elif yv is not None:                           # documented fallback when Cboe is unreachable
+        fb = pd.DataFrame({"DATE": yv.index.strftime("%m/%d/%Y"), "OPEN": yv["Open"], "HIGH": yv["High"],
+                           "LOW": yv["Low"], "CLOSE": yv["Close"]})
+        fb.to_csv(snap / "vix_cboe.csv", index=False)
+        rec("vix_cboe.csv", source="derived_fallback", derived_from="original/volvix_yahoo_chart_VIX.json")
+        meta["vix_source_used"] = "yahoo_^VIX_fallback (Cboe unavailable)"
+    else:
+        raise FileNotFoundError("no VIX source: neither VIX_History.csv nor volvix_yahoo_chart_VIX.json")
     shutil.copyfile(snap / "original" / "F-F_Research_Data_Factors_daily_CSV.zip", snap / "ff_factors_daily.zip")
     rec("ff_factors_daily.zip", source="copy", derived_from="original/F-F_Research_Data_Factors_daily_CSV.zip")
     write_json(snap / "snapshot_metadata.json", meta)

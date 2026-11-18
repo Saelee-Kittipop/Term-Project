@@ -76,6 +76,8 @@ def data_quality_report_th(paths, cfg) -> Path:
     t.append(_synthetic_banner(paths))
     t.append("## 1. แหล่งข้อมูลและ snapshot\n\n")
     t.append(f"- Snapshot: `{q['snapshot_id']}` (ไฟล์ดิบไม่ถูกแก้ไข ตรวจ SHA-256 ก่อนใช้ทุกครั้ง)\n"
+             f"- ที่มาของไฟล์: {q.get('provenance')}\n"
+             f"- แหล่ง VIX ที่ใช้จริง: {q.get('vix_source_used')} ; เทียบ Cboe กับ Yahoo ^VIX: {q.get('vix_crosscheck_cboe_vs_yahoo')}\n"
              f"- ปฏิทินซื้อขาย: {q['calendar_source']}\n"
              f"- วันแรกที่มีราคาแต่ละ ETF: {q['first_price_date_by_ticker']}\n"
              f"- วันเริ่มข้อมูลร่วมจริง: **{q['common_start']}** ถึง {q['last_common_date']} ({q['sessions']} วันทำการ)\n"

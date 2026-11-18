@@ -17,7 +17,7 @@ Notebook ตรึง commit โค้ด `b9aaeb1cf45b6d0a94d83bcb96415d70a065b
 |---|---|
 | สินทรัพย์ | ACWI, SHY, XLK, XLV, GLD |
 | น้ำหนักอ้างอิง / Alert | 40/20/20/15/5 และ 20/60/10/7.5/2.5 |
-| ข้อมูล | เริ่มจากวันแรกที่มีราคาจริงครบ 5 ETF ในปี 2008, 60 ผลตอบแทนแรกเป็น lookback |
+| ข้อมูล | ราคาจาก Yahoo chart API โดยตรง, VIX จาก Cboe, RF จาก French; เริ่มจากวันแรกที่มีราคาจริงครบ 5 ETF ในปี 2008, 60 ผลตอบแทนแรกเป็น lookback |
 | Split (วัน origin) | train ถึง 2017, validation 2018–2019, test 2020–2025, purge target ที่คร่อมขอบ |
 | Target | sample SD (ddof=1) ของ r_ref วัน t+1..t+5 × √252 |
 | Input | R: 60×5 ETF returns; RV: 60×6 (+ VIX level lag 1 วันทำการ) |

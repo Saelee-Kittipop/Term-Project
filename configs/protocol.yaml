@@ -7,7 +7,10 @@ protocol_version: "core60-2008-v1"
 
 data:
   tickers: [ACWI, SHY, XLK, XLV, GLD]          # asset order is fixed everywhere
-  vix_source: cboe                             # Cboe VIX_History.csv, CLOSE column
+  price_source: yahoo_chart_direct             # Yahoo chart API v8 over HTTPS (endpoint used by yfinance); adjusted
+                                               # Close = adjclose (yfinance auto_adjust=True). Alternative: yfinance
+  vix_source: cboe                             # Cboe VIX_History.csv, CLOSE column; Yahoo ^VIX = cross-check, and
+                                               # fallback only if Cboe is unreachable (recorded as vix_source_used)
   rf_source: french_daily                      # Fama/French F-F_Research_Data_Factors_daily, RF column (percent)
   download_start: "2008-01-01"                 # actual common start is detected from raw data (ACWI inception 2008-03-26)
   download_end_exclusive: "2026-01-01"         # data stop at the last trading day of 2025

@@ -7,6 +7,8 @@
 | ข้อกำหนด | ค่า | ไฟล์ / ฟังก์ชัน |
 |---|---|---|
 | สินทรัพย์และลำดับ | ACWI, SHY, XLK, XLV, GLD | `protocol.yaml: data.tickers` |
+| แหล่งราคา | Yahoo chart API v8 ดึงตรงผ่าน HTTPS (endpoint ที่ yfinance ใช้); adjusted Close = adjclose ตาม `auto_adjust=True` | `data/yahoo_direct.py`, `data/from_files.parse_yahoo_chart`; ทางเลือก `configs/source_yfinance.yaml` |
+| แหล่ง VIX | Cboe CLOSE; Yahoo `^VIX` ใช้ตรวจเทียบ และใช้แทนเฉพาะเมื่อ Cboe ดาวน์โหลดไม่ได้ (บันทึก `vix_source_used`) | `data/from_files.py` |
 | น้ำหนักอ้างอิง (Normal) | 40/20/20/15/5 | `portfolio.reference_weights`, ตรวจผลรวม=1 ใน `config.validate_config` |
 | น้ำหนัก Alert | 20/60/10/7.5/2.5 (= 50% อ้างอิง + 50% SHY) | `portfolio.alert_weights`, ตรวจสูตรใน `validate_config` |
 | พอร์ตเปรียบเทียบไม่เพิ่ม sector | ACWI 75 / SHY 20 / GLD 5 | `portfolio.no_tilt_weights` |
@@ -46,8 +48,9 @@
 9. **GARCH** ใช้ `arch` (`rescale=False`, ผลตอบแทน×100) ประมาณบนผลตอบแทนถึงวันทำการสุดท้ายของ 2017 แล้ว `fix(params)` เพื่อกรอง variance ไปข้างหน้า หากไม่ลู่เข้าจะคืนค่า NaN และบันทึก `converged=false` ไม่แทนด้วยโมเดลอื่น
 10. **Backtest**: CAGR นับต้นทุนซื้อครั้งแรกใน NAV; daily net returns เริ่มจากวันถัดจากวันซื้อครั้งแรก (N = จำนวนวันผลตอบแทน); turnover รวมการซื้อครั้งแรก; วันสุดท้ายไม่มีการซื้อขาย; ถ้าขาด signal ในวันใด (ไม่ควรเกิดกับข้อมูลที่สะอาด) จะคงสถานะเดิมและบันทึกใน `signal_log.csv`; ถ้าขาดผลตอบแทนในช่วง backtest จะหยุดพร้อม error (ไม่ข้ามวันเงียบ ๆ)
 11. **Sharpe** ใช้เฉพาะวันที่มี RF จาก French; จำนวนวันที่ขาดถูกรายงานใน `sharpe_days_missing_rf`
-12. **VIX** ใช้คอลัมน์ CLOSE ของไฟล์ Cboe `VIX_History.csv`; RF ใช้คอลัมน์ RF ของ `F-F_Research_Data_Factors_daily` หาร 100
-13. **ปฏิทิน** ใช้ NYSE จาก `pandas_market_calendars`; หากไม่มีแพ็กเกจจะใช้ union ของวันที่ ETF และบันทึกแหล่งปฏิทินในรายงานคุณภาพข้อมูล
+12. **แหล่งราคา**: ร่างรายงานระบุ yfinance แต่โค้ดดึง Yahoo chart API โดยตรงตามที่ผู้จัดทำขอ ข้อมูลมาจาก endpoint เดียวกันและแปลงด้วยกติกาเดียวกับ `auto_adjust=True` ควรเขียนในรายงานว่า "ข้อมูลราคาจาก Yahoo Finance (chart API v8)"
+13. **VIX** ใช้คอลัมน์ CLOSE ของไฟล์ Cboe `VIX_History.csv`; RF ใช้คอลัมน์ RF ของ `F-F_Research_Data_Factors_daily` หาร 100
+14. **ปฏิทิน** ใช้ NYSE จาก `pandas_market_calendars`; หากไม่มีแพ็กเกจจะใช้ union ของวันที่ ETF และบันทึกแหล่งปฏิทินในรายงานคุณภาพข้อมูล
 
 ## 3. ความต่างระหว่าง Project instructions กับร่างรายงาน และการตัดสินใจ
 

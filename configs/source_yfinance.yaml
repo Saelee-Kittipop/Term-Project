@@ -1,0 +1,3 @@
+# Alternative price source: the yfinance package instead of direct Yahoo chart API calls.
+data:
+  price_source: yfinance

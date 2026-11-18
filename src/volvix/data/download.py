@@ -61,6 +61,14 @@ def create_snapshot(cfg: dict, data_dir: str | Path, snapshot_id: str | None = N
     unreachable); such files are copied byte-for-byte and marked source=manual.
     """
     snapshot_id = snapshot_id or utc_now().replace(":", "").replace("-", "")
+    if cfg["data"].get("price_source", "yfinance") == "yahoo_chart_direct":
+        from .from_files import create_snapshot_from_files
+        from .yahoo_direct import download_direct_files
+        staging = Path(data_dir) / "downloads" / snapshot_id
+        download_direct_files(cfg, staging, manual_dir=manual_dir)
+        return create_snapshot_from_files(cfg, data_dir, staging, snapshot_id,
+                                          provenance="downloaded directly over HTTPS (Yahoo chart API v8, Cboe, French) by "
+                                                     "src/volvix/data/yahoo_direct.py")
     snap = Path(data_dir) / "raw" / snapshot_id
     if (snap / "snapshot_metadata.json").exists():
         raise FileExistsError(f"snapshot {snap} already exists and is immutable")
