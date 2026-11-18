@@ -3,7 +3,7 @@
 Repository สำหรับ term project วิชา Applied Deep Learning and Neural Networks ดำเนินการตามร่างรายงาน
 `portfolio_volatility_research_th_2008_core60.docx` (ฉบับปรับปรุง 2) ซึ่งเป็น specification หลัก
 
-Notebook ตรึง commit โค้ด `35f9e6bd6e9a790e08fb554e8ae714b44a710aab` ไว้ภายใน
+Notebook ตรึง commit โค้ด `2b504be33ad3568bb71ef33818cb1d2f5d7823e8` ไว้ภายใน
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Saelee-Kittipop/Term-Project/blob/research-pipeline/notebooks/colab_run.ipynb)
 
