@@ -56,6 +56,11 @@ def set_seed(seed: int, deterministic: bool = True):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.use_deterministic_algorithms(True, warn_only=True)
+        if torch.cuda.is_available():
+            # memory-efficient / flash attention backward is non-deterministic on CUDA; use the math kernel
+            torch.backends.cuda.enable_mem_efficient_sdp(False)
+            torch.backends.cuda.enable_flash_sdp(False)
+            torch.backends.cuda.enable_math_sdp(True)
 
 
 def device_auto() -> torch.device:
