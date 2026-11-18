@@ -34,7 +34,7 @@ def main(argv=None):
     ap.add_argument("--config", default=None)
     ap.add_argument("--override", action="append", default=[])
     ap.add_argument("--stages", default="data,baselines,train,freeze")
-    ap.add_argument("--snapshot", default="latest", help="latest | new | synthetic | <snapshot_id>")
+    ap.add_argument("--snapshot", default="latest", help="latest | new | synthetic | files:<dir with browser-downloaded files> | <snapshot_id>")
     ap.add_argument("--manual-dir", default=None)
     ap.add_argument("--max-runs", type=int, default=None)
     ap.add_argument("--allow-test-rerun-reason", default=None)

@@ -80,6 +80,9 @@ def stage_data(cfg, paths: Paths, snapshot: str = "latest", manual_dir=None, log
     with m.stage("data") as st:
         if snapshot == "new":
             snap = create_snapshot(cfg, paths.data_dir, manual_dir=manual_dir)
+        elif snapshot.startswith("files:"):
+            from .data.from_files import create_snapshot_from_files
+            snap = create_snapshot_from_files(cfg, paths.data_dir, snapshot.split(":", 1)[1])
         elif snapshot == "synthetic":
             snap = paths.data_dir / "raw" / "SYNTHETIC"
             if not (snap / "snapshot_metadata.json").exists():
