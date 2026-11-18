@@ -144,6 +144,11 @@ def clean_snapshot(cfg: dict, snap: str | Path, out_dir: str | Path) -> dict:
     first_dates = {t: etf[t].index.min() for t in tickers}
     common_start = max(first_dates.values())
     last_common = min(etf[t].index.max() for t in tickers)
+    for t in tickers:                                  # rows outside the common window are not used
+        before = len(etf[t])
+        etf[t] = etf[t][(etf[t].index >= common_start) & (etf[t].index <= last_common)]
+        steps.add("common_window", t, before, len(etf[t]),
+                  f"ตัดแถวก่อนวันข้อมูลร่วมแรก {common_start.date()} (ACWI เริ่มซื้อขาย) หรือหลังวันร่วมสุดท้าย")
 
     # 2. Trading calendar ------------------------------------------------------------------
     sessions = exchange_sessions(common_start, last_common, cfg["data"].get("trading_calendar", "XNYS"))
