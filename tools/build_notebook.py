@@ -126,7 +126,7 @@ code("""
 from google.colab import auth
 auth.authenticate_user()
 !pip -q install gspread
-SPREADSHEET_ID = ""   # leave empty to create a new spreadsheet
+SPREADSHEET_ID = "15CUiD2KzgJriNChW7yKtuZCbVqTN7tRq05nNRnP3O28"   # mirror sheet in MyDrive/vix_term_project; set "" to create a new one
 args = f"--spreadsheet-id {SPREADSHEET_ID}" if SPREADSHEET_ID else ""
 !python scripts/mirror_to_sheets.py --run-dir {DRIVE_ROOT}/runs/{FORMAL_RUN} {args}
 """)
