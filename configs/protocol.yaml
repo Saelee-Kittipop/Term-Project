@@ -1,0 +1,94 @@
+# LOCKED RESEARCH PROTOCOL
+# Source of truth: portfolio_volatility_research_th_2008_core60.docx (revision 2, 19 Nov 2026)
+# Do NOT edit after the validation freeze. Any change after freeze must be logged as
+# exploratory analysis in a separate run directory.
+
+protocol_version: "core60-2008-v1"
+
+data:
+  tickers: [ACWI, SHY, XLK, XLV, GLD]          # asset order is fixed everywhere
+  vix_source: cboe                             # Cboe VIX_History.csv, CLOSE column
+  rf_source: french_daily                      # Fama/French F-F_Research_Data_Factors_daily, RF column (percent)
+  download_start: "2008-01-01"                 # actual common start is detected from raw data (ACWI inception 2008-03-26)
+  download_end_exclusive: "2026-01-01"         # data stop at the last trading day of 2025
+  yfinance:
+    auto_adjust: true
+    actions: true
+    repair: false
+  urls:
+    cboe_vix: "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
+    french_daily_zip: "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip"
+  trading_calendar: XNYS
+  extreme_return_flag_abs: 0.15                # flag only, never removed
+
+portfolio:
+  reference_weights: {ACWI: 0.40, SHY: 0.20, XLK: 0.20, XLV: 0.15, GLD: 0.05}
+  alert_weights:     {ACWI: 0.20, SHY: 0.60, XLK: 0.10, XLV: 0.075, GLD: 0.025}
+  no_tilt_weights:   {ACWI: 0.75, SHY: 0.20, XLK: 0.00, XLV: 0.00, GLD: 0.05}
+
+target:
+  horizon: 5                                   # returns t+1 .. t+5
+  ddof: 1
+  annualization: 252
+  log_epsilon: 1.0e-6                          # z = log(max(y, eps)), annualized decimal
+
+features:
+  lookback: 60                                 # 60 trading-day input window, rows t-59..t
+  sets:
+    R:  {use_vix: false}                       # 60 x 5 ETF simple returns
+    RV: {use_vix: true}                        # 60 x 6 = returns + VIX level lagged one trading day
+  vix_lag: 1
+  scaler: standard                             # fit on unique training input rows only
+
+splits:                                        # forecast-origin dates; purge = target end must stay inside split
+  train: {start: null, end: "2017-12-31"}
+  validation: {start: "2018-01-01", end: "2019-12-31"}
+  test: {start: "2020-01-01", end: "2025-12-31"}
+
+baselines:
+  hv_window: 20
+  ewma_lambda: 0.94
+  ewma_init_returns: 60
+  garch: {p: 1, q: 1, mean: Constant, dist: normal, rescale_pct: true}
+
+models:
+  lstm: {hidden: 32, dense: 16}
+  transformer: {d_model: 32, heads: 2, ff: 64, blocks: 1, dense: 16}
+
+training:
+  optimizer: adam
+  batch_size: 32
+  max_epochs: 100
+  patience: 10
+  seeds: [11, 22, 33]
+  grid:
+    learning_rate: [0.001, 0.0003]
+    dropout: [0.1, 0.2]
+  selection: mean_val_logmse_across_feature_sets_and_seeds
+  tie_break: [higher_dropout, lower_learning_rate]
+  ensemble: mean_log_vol_over_seeds
+  shuffle_train_batches: true
+  init_output_bias_to_train_mean: true         # implementation detail, documented in docs/PROTOCOL_TH.md
+  deterministic: true
+
+alerts:
+  tau_quantile: 0.90                           # of complete-label training targets (numpy linear interpolation)
+  cutoff_rule: max_f1_on_validation
+  cutoff_tie_break: highest_cutoff
+  fallback_if_no_validation_positive: tau
+
+evaluation:
+  primary_metric: log_rmse
+  bootstrap: {block_length: 20, reps: 1000, seed: 2026}
+  per_year: [2020, 2021, 2022, 2023, 2024, 2025]
+  supplementary:                               # from Project instructions; reported separately, never used for selection
+    diebold_mariano: {loss: [log_se, se, qlike], hac_lag: 4, hln_correction: true}
+    var: {levels: [0.95, 0.99], horizons: [1, 5]}
+
+backtest:
+  signal_delay_days: 1                         # signal after close t, trade at close t+1, new weights earn t+2
+  initial_nav: 100.0
+  cost_bps_base: 10
+  cost_bps_sensitivity: [5, 10, 20]
+  rebalance: daily_to_target
+  bisection_tol: 1.0e-12
