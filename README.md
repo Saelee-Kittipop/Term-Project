@@ -3,14 +3,14 @@
 Repository สำหรับ term project วิชา Applied Deep Learning and Neural Networks ดำเนินการตามร่างรายงาน
 `portfolio_volatility_research_th_2008_core60.docx` (ฉบับปรับปรุง 2) ซึ่งเป็น specification หลัก
 
-Notebook ตรึง commit โค้ด `2b504be33ad3568bb71ef33818cb1d2f5d7823e8` ไว้ภายใน
+Notebook ตรึง commit โค้ด `892dcc7a22e03f83c118004c18f499b30f2e0fbc` ไว้ภายใน
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Saelee-Kittipop/Term-Project/blob/research-pipeline/notebooks/colab_run.ipynb)
 
 ## สถานะ
 - โค้ดครบทุกขั้นตอน: ข้อมูล → target/split/scaler → HV20/EWMA/GARCH → LSTM/Transformer 48 runs → freeze → test → backtest → กราฟ → handover
 - ชุดทดสอบความถูกต้อง (`tests/`) ผ่านทั้งหมด และได้รันทุกขั้นแบบครบวงจรด้วย **ข้อมูลสังเคราะห์** เพื่อตรวจ code path แล้ว
-- **ยังไม่มีผลการทดลองจากข้อมูลจริง** ต้องรันบน Colab (ข้อมูล Yahoo/Cboe/French ดาวน์โหลดใน Colab) ดู [`docs/COLAB_RUN_TH.md`](docs/COLAB_RUN_TH.md)
+- **รัน formal_v1 กับข้อมูลจริงครบแล้ว (19 พ.ย. 2569)** บน CPU ด้วย commit `892dcc7` และ snapshot `FILES_20261118T215048Z` (ไฟล์ Yahoo chart API, Cboe, French ที่ดึงผ่าน browser) ผลอยู่นอก Git; ทำซ้ำบน Colab ได้ด้วย notebook ดู [`docs/COLAB_RUN_TH.md`](docs/COLAB_RUN_TH.md)
 
 ## Protocol โดยย่อ
 | หัวข้อ | ค่า |
