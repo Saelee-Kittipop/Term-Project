@@ -500,8 +500,14 @@ slide(kind="title", title="พยากรณ์ความผันผวน�
       subtitle="ข้อมูล VIX ช่วยการพยากรณ์ การแจ้งเตือน และการบริหารความเสี่ยงหรือไม่",
       meta="Applied Deep Learning and Neural Networks · ผู้จัดทำ: รอระบุ · 19 พ.ย. 2569",
       notes="สวัสดีครับ วันนี้จะนำเสนอผลการทดลองพยากรณ์ความผันผวนห้าวันของพอร์ต ETF ด้วย LSTM และ Transformer และตรวจว่าการเพิ่ม VIX ช่วยหรือไม่ ผลทั้งหมดมาจาก run formal_v1 ที่ตรึง protocol ก่อนเปิด test ครั้งเดียว")
-slide(kind="agenda", title="วาระการนำเสนอ", items=["1 บทนำและคำถามวิจัย", "2 สถาปัตยกรรมและกรอบแนวคิด", "3 วิธีวิจัยและข้อมูล", "4 ผลการศึกษา", "5 อภิปรายและข้อเสนอแนะ"],
-      notes="การนำเสนอแบ่งเป็นห้าส่วนตามโครงรายงาน")
+slide(kind="stepper", title="วันนี้เราจะตอบอะไร และเดินเรื่องอย่างไร",
+      steps=[["ตั้งโจทย์", "แปลงคำถามบริหารความเสี่ยงพอร์ตเป็นงานพยากรณ์ความผันผวน 5 วัน"],
+             ["ออกแบบโมเดล", "LSTM และ Transformer แบบมี/ไม่มี VIX เทียบกับ HV20, EWMA, GARCH"],
+             ["ทดลองอย่างไม่โกง", "แบ่งตามเวลา purge ขอบ และตรึงทุกอย่างก่อนเปิด test"],
+             ["อ่านผล", "ความแม่นยำ การแจ้งเตือน และผลการลงทุนหลังต้นทุน"],
+             ["สรุปบทเรียน", "ทำไมแม่นขึ้นแต่ไม่ได้เงินเพิ่ม และจะแก้อย่างไร"]],
+      groups=[[0, 2, "ที่มาและวิธีการ · ส่วน 1–3"], [3, 4, "ผลและบทเรียน · ส่วน 4–5"]],
+      notes="วันนี้มีห้าขั้น ตั้งโจทย์ ออกแบบโมเดล ทดลองอย่างไม่โกง อ่านผล และสรุปบทเรียน สามขั้นแรกคือที่มาและวิธีการ สองขั้นหลังคือผลและสิ่งที่เรียนรู้")
 slide(kind="kpis", section="1 บทนำ", title="ข้อค้นพบหลัก: แม่นขึ้น แต่ไม่คุ้มหลังต้นทุน",
       kpis=[[f(tm.loc['L_RV', 'log_RMSE']), "log-RMSE ดีที่สุด (L RV)", f"GARCH {f(tm.loc['GARCH','log_RMSE'])}"],
             [f"{pbp.loc[('L_RV','L_R','log_se'),'mean_diff']:+.4f}", "ผลต่าง log-SE จากการเพิ่ม VIX (LSTM)", "CI คร่อมศูนย์"],
@@ -521,18 +527,26 @@ slide(kind="arch", section="2 สถาปัตยกรรม", title="กา�
       body="LSTM 32 units → Dense 16 → 1 · Transformer: projection 32, 2 heads, FF 64, 1 block, GAP · loss = MSE บน log volatility · baselines: HV20, EWMA λ=0.94, GARCH(1,1)",
       source="ที่มา: src/volvix/models.py, post_hoc/seed_stability.csv · commit 892dcc7",
       notes="ใช้โมเดลเล็กเพียง 5 ถึง 9 พัน parameters เพราะข้อมูลรายวันมีตัวอย่างอิสระจำกัด เปรียบเทียบเป็นคู่ภายใน architecture เพื่อวัดผลของ VIX และเทียบข้าม architecture เมื่อข้อมูลเหมือนกัน")
-slide(kind="text_image", section="2 สถาปัตยกรรม", title="กรอบการวิจัย: ตรึงทุกอย่างก่อนเปิด test",
-      items=["แบ่งตามเวลา: train ≤2017 · validation 2018–19 · test 2020–25", "purge target ที่คร่อมขอบ · scaler และ τ จาก train เท่านั้น",
-             "freeze.json เก็บ hash ของข้อมูล scaler checkpoints cutoffs", "test เปิดครั้งเดียว ไม่ปรับโมเดลจากผล test"],
-      image=str(FIG / "experiment-framework.png"), source="ภาพแนวคิดจากร่างรายงาน · การตรึงจริงดู frozen/freeze.json",
-      notes="จุดสำคัญคือป้องกัน leakage target เป็นอนาคต t+1 ถึง t+5 จึงตัดห้าวันที่ขอบทุกชุด และตรึง cutoff กับกติกาลงทุนพร้อม hash ก่อนเปิด test")
+slide(kind="framework", section="2 สถาปัตยกรรม", title="กรอบการวิจัย: จากข้อมูลตลาดสู่การตัดสินใจลดความเสี่ยง",
+      source=f"ที่มา: configs/protocol.yaml, dataset/split_manifest.csv, frozen/freeze.json · run {RUN.name} · commit {MAIN_COMMIT}",
+      fw={"data": ["ข้อมูลรายวัน", "Yahoo · Cboe · French", "5 ETF + VIX + RF", f"{N['common_start'][:7]} – {N['last_date'][:7]}", f"N = {N['sessions']:,} วัน"],
+          "feat": ["Returns 5 ETF × 60 วัน", "VIX lag 1 วัน (เฉพาะ RV)", "Target: SD 5 วันข้างหน้า × √252", f"τ = P90 ของ train = {pct(N['tau'])}"],
+          "prep": ["ปฏิทิน NYSE ไม่เติมค่า", "purge 5 วันที่ขอบ", "scaler fit บน train เท่านั้น", "train ≤2017 · val 18–19 · test 20–25"],
+          "models": ["L R", "L RV", "T R", "T RV"], "base": "Baselines: HV20 · EWMA · GARCH(1,1)", "runs": "48 runs → ensemble 3 seeds",
+          "eval": [["ความแม่นยำ", "Forecast accuracy", ["log-RMSE · QLIKE · RMSE", "paired block bootstrap CI"]],
+                   ["การแจ้งเตือน", "Alert quality", ["Precision · Recall · F1 · AP", "cutoff จาก validation"]],
+                   ["ผลการลงทุน", "Economic value", ["Net CAGR · Sharpe · Max DD", "ต้นทุน 10 bps · trade t+1"]],
+                   ["อธิบายโมเดล", "Explainability", ["permutation importance", "VIX เทียบกับ returns"]]],
+          "goal": ["Risk dashboard", "ช่วยผู้จัดการพอร์ตตัดสินใจลดความเสี่ยง"]},
+      notes="นี่คือกรอบทั้งงานในหน้าเดียว แถวบนคือการสร้างโมเดล เริ่มจากข้อมูลรายวัน 4,470 วัน สร้าง input เป็นผลตอบแทนย้อนหลัง 60 วัน และ VIX สำหรับโมเดล RV แล้วแบ่งข้อมูลตามเวลาพร้อม purge ก่อนฝึกโมเดลสี่แบบเทียบกับ baseline สามแบบ ผลลัพธ์คือค่าพยากรณ์ความผันผวน ซึ่งถ้าเกินเกณฑ์จะเป็นสัญญาณเตือน แถวล่างคือการประเมินบนข้อมูลอนาคตปี 2020 ถึง 2025 ที่ตรึงไว้ก่อนเปิด ประเมินสี่ด้าน คือความแม่นยำ การแจ้งเตือน ผลการลงทุนหลังต้นทุน และการอธิบายโมเดล เป้าหมายปลายทางคือหน้าจอเฝ้าระวังความเสี่ยงให้คนตัดสินใจ ไม่ใช่ปุ่มซื้อขายอัตโนมัติ")
 p1, s1 = fpath("F01_data_overview")
 slide(kind="figure", section="3 วิธีวิจัยและข้อมูล", title="ข้อมูลจริง 2008–2025: target และ VIX เคลื่อนไหวร่วมกัน",
       image=p1, caption=f"{N['sessions']:,} วันทำการ · ไม่มี missing session · τ = P90 ของ train = {pct(N['tau'])}", source=s1,
       notes=f"ข้อมูลร่วมเริ่ม {N['common_start']} เพราะ ACWI เริ่มซื้อขายช้าที่สุด target คือ annualized SD ของห้าวันข้างหน้า ไม่ใช่ความผันผวนหนึ่งปี เส้นประคือขอบ validation และ test ช่วง test มีวิกฤต COVID ที่ y สูงกว่าร้อยละร้อย")
-slide(kind="table", section="3 วิธีวิจัยและข้อมูล", title="การแบ่งข้อมูลและสัดส่วนความผันผวนสูง",
+slide(kind="timeline_table", section="3 วิธีวิจัยและข้อมูล", title="การแบ่งข้อมูลตามเวลาป้องกันการรั่วของข้อมูลอนาคต",
+      segments=[["Train", "2008–2017", 9.75, "ฝึกโมเดล · ตั้ง τ และ scaler"], ["Val", "2018–19", 2.0, "เลือก config · cutoff"], ["Test", "2020–2025", 6.0, "เปิดครั้งเดียว"]],
       header=["ชุด", "ช่วง origin", "ตัวอย่างสุทธิ", "purge", "y เฉลี่ย", "y > τ"],
-      rows=[[lab_, f"{S.loc[s,'first_origin']} – {S.loc[s,'last_origin']}", f"{int(S.loc[s,'net_samples']):,}", f"{int(S.loc[s,'purged_target_crosses_boundary'])}",
+      rows=[[lab_, f"{S.loc[s,'first_origin'][:7]} – {S.loc[s,'last_origin'][:7]}", f"{int(S.loc[s,'net_samples']):,}", f"{int(S.loc[s,'purged_target_crosses_boundary'])}",
              pct(D.loc[(s, 'y_target'), 'mean'], 1), pct(H.loc[s, 'high_risk_share_y_gt_tau'], 1)] for s, lab_ in [("train", "Train"), ("validation", "Validation"), ("test", "Test")]],
       body=f"Alignment checks ผ่าน {N['checks_passed']}/{N['checks_total']} ข้อด้วยข้อมูลจริงก่อนฝึก · validation มีความผันผวนต่ำและเหตุการณ์น้อย ({pct(N['hr_val'],1)})",
       source="ที่มา: dataset/split_manifest.csv, reports/descriptive_stats_by_split.csv · run formal_v1 · commit 892dcc7",

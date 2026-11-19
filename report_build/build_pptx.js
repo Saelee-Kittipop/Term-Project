@@ -48,7 +48,7 @@ function table(s, header, rows, x, y, w, fs = 13) {
 
 let sec = null;
 for (const d of SL) {
-  const secTitle = d.kind === "title" || d.kind === "agenda" ? "เปิด" : d.kind === "closing" ? "สรุป" : (d.section || "").split(" ").slice(0, 2).join(" ") || "เปิด";
+  const secTitle = d.kind === "title" || d.kind === "agenda" || d.kind === "stepper" ? "เปิด" : d.kind === "closing" ? "สรุป" : (d.section || "").split(" ").slice(0, 2).join(" ") || "เปิด";
   const secName = d.section === "ภาคผนวก" ? "ภาคผนวก" : secTitle;
   if (secName !== sec) { pres.addSection({ title: secName }); sec = secName; }
   const dark = d.kind === "title" || d.kind === "closing";
@@ -115,6 +115,92 @@ for (const d of SL) {
       s.addImage(fit(d.image, MX, top, 7.6, avail));
       bullets(s, d.items, 8.45, top + 0.1, W - 8.45 - MX, avail, 16);
       break;
+    case "stepper": {
+      const n = d.steps.length, x0 = MX + 0.9, x1 = W - MX - 0.9, gap = (x1 - x0) / (n - 1), cy = 3.55, r = 0.42;
+      s.addShape(pres.shapes.LINE, { x: x0, y: cy, w: x1 - x0, h: 0, line: { color: "9DB7D5", width: 1.25 }, objectName: "rail" });
+      d.groups.forEach(([a, b, lab], gi) => {
+        const xa = x0 + a * gap - 1.0, xb = x0 + b * gap + 1.0;
+        s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: xa, y: 2.45, w: xb - xa, h: 0.4, rectRadius: 0.2, fill: { color: "DCE8F5" }, line: { color: "DCE8F5" }, objectName: `group${gi}` });
+        T(s, lab, { x: xa, y: 2.45, w: xb - xa, h: 0.4, fontSize: 13, bold: true, color: "2E5A88", align: "center", valign: "middle" });
+      });
+      d.steps.forEach(([t, desc], i) => {
+        const cx = x0 + i * gap, last = i === n - 1;
+        s.addShape(pres.shapes.OVAL, { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r, fill: { color: last ? "2E5A88" : HEX.lt1 }, line: { color: "2E5A88", width: 2 }, objectName: `step${i}` });
+        T(s, String(i + 1), { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r, fontSize: 22, bold: true, color: last ? HEX.lt1 : "2E5A88", align: "center", valign: "middle" });
+        T(s, t, { x: cx - 1.15, y: cy + 0.6, w: 2.3, h: 0.45, fontSize: 19, bold: true, align: "center" });
+        T(s, desc, { x: cx - 1.15, y: cy + 1.1, w: 2.3, h: 1.5, fontSize: 15, color: HEX.accent4, align: "center", valign: "top" });
+      });
+      break;
+    }
+    case "framework": {
+      const f = d.fw, NAVY = HEX.dk2, LINEC = "8A96A8";
+      const bar = (txt, y) => { s.addShape(pres.shapes.RECTANGLE, { x: MX, y, w: 5.6, h: 0.34, fill: { color: NAVY }, line: { color: NAVY }, objectName: "bar" });
+        T(s, txt, { x: MX + 0.15, y, w: 5.4, h: 0.34, fontSize: 12, bold: true, color: HEX.lt1, valign: "middle", charSpacing: 2 }); };
+      const arrow = (x, y) => s.addShape(pres.shapes.RIGHT_ARROW, { x, y, w: 0.26, h: 0.26, fill: { color: HEX.dk1 }, line: { color: HEX.dk1 }, objectName: "arrow" });
+      const box = (x, y, w, h, o = {}) => s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.06, fill: { color: o.fill || "F4F6F9" }, line: { color: o.line || LINEC, width: 1, dashType: o.dash }, objectName: o.name || "box" });
+      const bul = (items, x, y, w, h, fs = 11.5) => T(s, items.map((t, i) => ({ text: t, options: { bullet: { code: "25CB" }, breakLine: i < items.length - 1, paraSpaceAfter: 4 } })), { x, y, w, h, fontSize: fs, valign: "top" });
+      bar("MODEL DEVELOPMENT PIPELINE", 1.6);
+      const top = 2.1, hh = 2.15, yA = top + hh / 2 - 0.13;
+      // 1 data
+      let x = MX;
+      T(s, f.data[0], { x, y: top, w: 1.75, h: 0.35, fontSize: 14, bold: true, align: "center" });
+      T(s, f.data.slice(1).join("\n"), { x, y: top + 0.42, w: 1.75, h: 1.7, fontSize: 11.5, align: "center", valign: "top", color: HEX.dk1 });
+      arrow(x + 1.8, yA); x += 2.12;
+      // 2 features
+      T(s, "Input และ target", { x, y: top - 0.02, w: 2.55, h: 0.32, fontSize: 13, bold: true, align: "center" });
+      box(x, top + 0.32, 2.55, hh - 0.32); bul(f.feat, x + 0.1, top + 0.45, 2.4, hh - 0.5);
+      arrow(x + 2.6, yA); x += 2.92;
+      // 3 prep
+      T(s, "เตรียมข้อมูลและแบ่งตามเวลา", { x, y: top - 0.02, w: 2.45, h: 0.32, fontSize: 13, bold: true, align: "center" });
+      box(x, top + 0.32, 2.45, hh - 0.32, { fill: "FBF3D5", line: "C9A227" }); bul(f.prep, x + 0.1, top + 0.45, 2.3, hh - 0.5);
+      arrow(x + 2.5, yA); x += 2.82;
+      // 4 models
+      T(s, "พัฒนาโมเดล", { x, y: top - 0.02, w: 2.6, h: 0.32, fontSize: 13, bold: true, align: "center" });
+      box(x, top + 0.32, 2.6, hh - 0.32);
+      f.models.forEach((m, i) => { const bx = x + 0.15 + (i % 2) * 1.17, by = top + 0.45 + Math.floor(i / 2) * 0.5, vix = m.endsWith("RV");
+        s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: bx, y: by, w: 1.1, h: 0.42, rectRadius: 0.05, fill: { color: vix ? NAVY : "E3EAF3" }, line: { color: NAVY, width: 0.75 }, objectName: `m${i}` });
+        T(s, m, { x: bx, y: by, w: 1.1, h: 0.42, fontSize: 12, bold: true, color: vix ? HEX.lt1 : NAVY, align: "center", valign: "middle" }); });
+      T(s, f.base, { x: x + 0.1, y: top + 1.47, w: 2.4, h: 0.3, fontSize: 10.5, align: "center" });
+      T(s, f.runs, { x: x + 0.1, y: top + 1.75, w: 2.4, h: 0.3, fontSize: 10.5, color: HEX.accent4, align: "center" });
+      arrow(x + 2.65, yA); x += 2.97;
+      // 5 output
+      const ow = W - MX - x;
+      box(x, top + 0.32, ow, hh - 0.32, { fill: "FFFBF2", line: "8A96A8", dash: "dash" });
+      T(s, [{ text: "Alert", options: { bold: true, color: "C0392B", breakLine: true } }, { text: "forecast > cutoff", options: { fontSize: 10, color: "C0392B", breakLine: true } },
+             { text: " ", options: { breakLine: true, fontSize: 6 } }, { text: "Normal", options: { bold: true, color: "2E7D4F", breakLine: true } }, { text: "ถือพอร์ตปกติ", options: { fontSize: 10, color: "2E7D4F" } }],
+        { x: x + 0.05, y: top + 0.45, w: ow - 0.1, h: hh - 0.55, fontSize: 13, align: "center", valign: "middle" });
+      T(s, "Forecast vol 5 วัน", { x: x - 0.1, y: top - 0.02, w: ow + 0.2, h: 0.32, fontSize: 12, bold: true, align: "center" });
+      // evaluation row
+      bar("MODEL EVALUATION · OUT-OF-TIME TEST 2020–2025", 4.5);
+      const ey = 4.98, eh = 1.55, gw = 2.3, cw = (W - 2 * MX - gw - 0.35 - 3 * 0.15) / 4;
+      f.eval.forEach(([th, en, items], i) => { const ex = MX + i * (cw + 0.15);
+        s.addShape(pres.shapes.RECTANGLE, { x: ex, y: ey, w: cw, h: eh, fill: { color: "F4F6F9" }, line: { color: "F4F6F9" }, objectName: `eval${i}` });
+        T(s, th, { x: ex + 0.15, y: ey + 0.08, w: cw - 0.3, h: 0.36, fontSize: 15, bold: true });
+        T(s, en, { x: ex + 0.15, y: ey + 0.43, w: cw - 0.3, h: 0.28, fontSize: 11, color: "2E5A88" });
+        T(s, items.map((t, k) => ({ text: "· " + t, options: { breakLine: k < items.length - 1 } })), { x: ex + 0.15, y: ey + 0.75, w: cw - 0.3, h: 0.75, fontSize: 11, color: HEX.dk1, valign: "top" }); });
+      const gx = W - MX - gw;
+      s.addShape(pres.shapes.RIGHT_ARROW, { x: gx - 0.33, y: ey + eh / 2 - 0.13, w: 0.26, h: 0.26, fill: { color: NAVY }, line: { color: NAVY }, objectName: "arrow2" });
+      s.addShape(pres.shapes.RECTANGLE, { x: gx, y: ey, w: gw, h: eh, fill: { color: NAVY }, line: { color: NAVY }, objectName: "goal" });
+      T(s, f.goal[0], { x: gx + 0.15, y: ey + 0.15, w: gw - 0.3, h: 0.45, fontSize: 16, bold: true, color: HEX.lt1 });
+      T(s, f.goal[1], { x: gx + 0.15, y: ey + 0.62, w: gw - 0.3, h: 0.8, fontSize: 12, color: "CADCFC", valign: "top" });
+      break;
+    }
+    case "timeline_table": {
+      const tot = d.segments.reduce((a, g) => a + g[2], 0), tw = W - 2 * MX, ty = 1.75, th = 0.95;
+      const fills = ["F3D9A4", "BFD3EA", "2E5A88"];
+      let tx = MX;
+      d.segments.forEach(([lab, yrs, len, role], i) => { const w = (tw * len) / tot;
+        s.addShape(pres.shapes.RECTANGLE, { x: tx, y: ty, w: w - 0.04, h: th, fill: { color: fills[i] }, line: { color: fills[i] }, objectName: `seg${i}` });
+        const dark = i === 2;
+        T(s, [{ text: `${lab} ${yrs}`, options: { bold: true, breakLine: true } }, { text: role, options: { fontSize: 11 } }],
+          { x: tx + 0.12, y: ty + 0.08, w: w - 0.25, h: th - 0.15, fontSize: 14, color: dark ? HEX.lt1 : HEX.dk1, valign: "middle" });
+        if (i > 0) { s.addShape(pres.shapes.LINE, { x: tx - 0.02, y: ty - 0.12, w: 0, h: th + 0.24, line: { color: "C0392B", width: 2, dashType: "dash" }, objectName: `purge${i}` }); }
+        tx += w; });
+      T(s, "เส้นประแดง = purge 5 วันที่ขอบ: ตัด target ที่คร่อมเส้นแบ่ง", { x: MX, y: ty + th + 0.15, w: tw, h: 0.3, fontSize: 11.5, color: "C0392B" });
+      table(s, d.header, d.rows, MX, ty + th + 0.6, tw, 13);
+      if (d.body) T(s, d.body, { x: MX, y: bottom - 0.6, w: tw, h: 0.6, fontSize: 14, color: HEX.dk2, bold: true, valign: "middle" });
+      break;
+    }
     case "figure_wide": {
       const im = fit(d.image, MX, top, W - 2 * MX, avail - 1.3);
       s.addImage({ ...im, y: top });
