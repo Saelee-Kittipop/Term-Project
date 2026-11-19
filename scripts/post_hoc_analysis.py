@@ -88,15 +88,18 @@ def main():
     # F13 metrics by model -----------------------------------------------------------------
     tm = pd.read_csv(paths.test / "test_metrics.csv")
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.6))
+    order = list(tm["model"])[::-1]
     for ax, col, lab in zip(axes, ["log_RMSE", "RMSE_pp", "QLIKE"], ["log-RMSE", "RMSE (pp)", "QLIKE"]):
-        ax.bar(tm["model"], tm[col], color=[COLORS[m] for m in tm["model"]])
-        lo = tm[col].min()
-        hi = tm[col].max()
-        pad = (hi - lo) * 0.6 if hi > lo else 1
-        ax.set_ylim(lo - pad, hi + pad * 0.5)
+        g = tm.set_index("model").loc[order]
+        ax.hlines(range(len(order)), g[col].min(), g[col], color="#d0d0d0", lw=1)
+        ax.scatter(g[col], range(len(order)), color=[COLORS[m] for m in order], s=60, zorder=3)
+        for k, v in enumerate(g[col]):
+            ax.annotate(f"{v:.3f}", (v, k), textcoords="offset points", xytext=(6, -3), fontsize=7)
+        ax.set_yticks(range(len(order)), order, fontsize=8)
         ax.set_title(f"{lab} (lower is better)", fontsize=9)
-        ax.tick_params(axis="x", labelrotation=45, labelsize=8)
-    fig.suptitle(f"Test forecast metrics, n = {int(tm['n'].iloc[0])} origins (axis does not start at zero)")
+        lo, hi = g[col].min(), g[col].max()
+        ax.set_xlim(lo - (hi - lo) * 0.1, hi + (hi - lo) * 0.35)
+    fig.suptitle(f"Test forecast metrics, n = {int(tm['n'].iloc[0])} origins (dot plot; axes do not start at zero)")
     fig.tight_layout()
     w.save(fig, "F13_test_metrics_by_model", tm[["model", "n", "MAE_pp", "RMSE_pp", "log_RMSE", "QLIKE"]],
            "post_hoc_analysis.metrics", "ตัวชี้วัดการพยากรณ์บน test ตามโมเดล", kind)
