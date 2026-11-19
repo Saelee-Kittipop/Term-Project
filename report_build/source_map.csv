@@ -1,0 +1,32 @@
+item,data_files,script,run_id,git_commit
+ตารางข้อมูลเอกสาร,run_manifest.json; processed/data_quality.json,scripts/run_pipeline.py,formal_v1,892dcc7
+ตาราง 2x2 และจำนวน parameters,post_hoc/seed_stability.csv; training/grid_summary.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+ตารางจำนวนแถว,processed/step_log.csv,src/volvix/data/clean.py,formal_v1,892dcc7
+ตารางสถิติเชิงพรรณนา,reports/descriptive_stats_by_split.csv,src/volvix/reporting.py,formal_v1,892dcc7
+Figure F01_data_overview,figures/data/F01_data_overview.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F02_train_return_correlation,figures/data/F02_train_return_correlation.csv,src/volvix/plotting.py,formal_v1,892dcc7
+ตาราง split,dataset/split_manifest.csv; reports/high_risk_share_by_split.csv,src/volvix/data/dataset.py,formal_v1,892dcc7
+ตารางผลการพยากรณ์ test,test/test_metrics.csv,src/volvix/pipeline.py (stage_test),formal_v1,892dcc7
+ตาราง DL vs baselines,test/test_paired_bootstrap.csv; test/supplementary_diebold_mariano.csv,src/volvix/evaluation.py,formal_v1,892dcc7
+Figure F13_test_metrics_by_model,figures/data/F13_test_metrics_by_model.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+Figure F04_test_forecast_vs_actual,figures/data/F04_test_forecast_vs_actual.csv,src/volvix/plotting.py,formal_v1,892dcc7
+ตาราง log-RMSE รายปี,test/test_metrics_by_year.csv,src/volvix/pipeline.py (stage_test),formal_v1,892dcc7
+Figure F12_test_logrmse_by_year,figures/data/F12_test_logrmse_by_year.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+ตาราง paired bootstrap,test/test_paired_bootstrap.csv,src/volvix/evaluation.py,formal_v1,892dcc7
+Figure F05_vix_forecast_difference,figures/data/F05_vix_forecast_difference.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F14_permutation_importance,figures/data/F14_permutation_importance.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+ตาราง grid,training/grid_summary.csv; frozen/selection.json,src/volvix/training.py,formal_v1,892dcc7
+ตาราง seed stability,post_hoc/seed_stability.csv; test/test_metrics_per_seed.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+Figure F03_learning_curves,figures/data/F03_learning_curves.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F10_validation_grid,figures/data/F10_validation_grid.csv,src/volvix/plotting.py,formal_v1,892dcc7
+ตารางผลการแจ้งเตือน,test/test_metrics.csv; frozen/freeze.json,src/volvix/evaluation.py,formal_v1,892dcc7
+Figure F06_test_confusion_matrices,figures/data/F06_test_confusion_matrices.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F07_test_precision_recall,figures/data/F07_test_precision_recall.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F11_test_roc,figures/data/F11_test_roc.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+ตาราง subgroup,test/test_alert_subgroup_low_trailing_vol.csv,src/volvix/pipeline.py (stage_test),formal_v1,892dcc7
+ตารางผลทางเศรษฐศาสตร์,backtest/backtest_summary.csv,src/volvix/backtest.py,formal_v1,892dcc7
+Figure F08_nav_and_drawdown,figures/data/F08_nav_and_drawdown.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F09_overlay_weights,figures/data/F09_overlay_weights.csv,src/volvix/plotting.py,formal_v1,892dcc7
+Figure F15_cost_sensitivity,figures/data/F15_cost_sensitivity.csv,scripts/post_hoc_analysis.py,formal_v1,fc0476d
+ตาราง VaR เสริม,test/supplementary_var_backtest.csv,src/volvix/evaluation.py,formal_v1,892dcc7
+ตาราง reproducibility,run_manifest.json; environment/environment.json,scripts/run_pipeline.py,formal_v1,892dcc7
